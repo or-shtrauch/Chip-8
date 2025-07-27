@@ -1,13 +1,11 @@
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
 
-#include "chip8_handlers.h"
 #include "chip8.h"
 
-
-int chip8_decode_handler_msb_0(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_0(chip8_t *chip8, uint16_t command)
+{
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     /**
      * 00E0 - CLS
@@ -19,11 +17,11 @@ int chip8_decode_handler_msb_0(chip8_t *chip8, ushort_t command, uchar_t opcode)
     /**
      * 00EE - RET
      * Return from a subroutine.
-     * The interpreter sets the program counter to the address at the top of the stack,
-     * then subtracts 1 from the stack pointer.
+     * The interpreter sets the program counter to the address at the top of the
+     * stack, then subtracts 1 from the stack pointer.
      */
     else if (command == 0x00EE) {
-        CHIP8_ASSERT_SP_VALID(chip8)
+        CHIP8_ASSERT_SP_VALID(chip8, CHIP8_INVALID_STACK_PTR_ERR);
 
         chip8->program_counter = chip8->stack[chip8->stack_pointer];
         chip8->stack_pointer--;
@@ -32,8 +30,9 @@ int chip8_decode_handler_msb_0(chip8_t *chip8, ushort_t command, uchar_t opcode)
     return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_1(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_1(chip8_t *chip8, uint16_t command)
+{
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     /**
      * 1nnn - JP addr
@@ -45,8 +44,9 @@ int chip8_decode_handler_msb_1(chip8_t *chip8, ushort_t command, uchar_t opcode)
     return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_2(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_2(chip8_t *chip8, uint16_t command)
+{
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     /**
      * 2nnn - CALL addr
@@ -57,7 +57,7 @@ int chip8_decode_handler_msb_2(chip8_t *chip8, ushort_t command, uchar_t opcode)
      * The PC is then set to nnn.
      */
     chip8->stack_pointer++;
-    CHIP8_ASSERT_SP_VALID(chip8)
+    CHIP8_ASSERT_SP_VALID(chip8, CHIP8_INVALID_STACK_PTR_ERR);
 
     CHIP8_STACK_TOP(chip8) = chip8->program_counter;
     chip8->program_counter = command & CHIP8_LSB_MASK(3);
@@ -65,8 +65,10 @@ int chip8_decode_handler_msb_2(chip8_t *chip8, ushort_t command, uchar_t opcode)
     return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_3(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_3(chip8_t *chip8, uint16_t command)
+{
+    uint8_t x, kk;
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     /**
      * 3xkk - SE Vx, byte
@@ -75,12 +77,11 @@ int chip8_decode_handler_msb_3(chip8_t *chip8, ushort_t command, uchar_t opcode)
      * The interpreter compares register Vx to kk,
      * and if they are equal, increments the program counter by 2.
       */
-    uchar_t x, kk;
 
     kk = command & CHIP8_LSB_MASK(2);
-    x = CHIP8_NIBBLE(command, 3);
+    x  = CHIP8_NIBBLE(command, 3);
 
-    CHIP8_ASSERT_VALID_REGISTER(chip8, x)
+    CHIP8_ASSERT_VALID_REGISTER(chip8, x, CHIP8_INVALID_REGISTER_ERR);
 
     if (CHIP8_Vx(chip8, x) == kk) {
         chip8->program_counter += 2;
@@ -89,8 +90,10 @@ int chip8_decode_handler_msb_3(chip8_t *chip8, ushort_t command, uchar_t opcode)
     return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_4(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_4(chip8_t *chip8, uint16_t command)
+{
+    uint8_t x, kk;
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     /**
      * 4xkk - SNE Vx, byte
@@ -99,12 +102,11 @@ int chip8_decode_handler_msb_4(chip8_t *chip8, ushort_t command, uchar_t opcode)
      * The interpreter compares register Vx to kk,
      * and if they are not equal, increments the program counter by 2.
      */
-    uchar_t x, kk;
 
     kk = command & CHIP8_LSB_MASK(2);
-    x = CHIP8_NIBBLE(command, 3);
+    x  = CHIP8_NIBBLE(command, 3);
 
-    CHIP8_ASSERT_VALID_REGISTER(chip8, x)
+    CHIP8_ASSERT_VALID_REGISTER(chip8, x, CHIP8_INVALID_REGISTER_ERR);
 
     if (CHIP8_Vx(chip8, x) != kk) {
         chip8->program_counter += 2;
@@ -113,8 +115,10 @@ int chip8_decode_handler_msb_4(chip8_t *chip8, ushort_t command, uchar_t opcode)
     return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_5(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_5(chip8_t *chip8, uint16_t command)
+{
+    uint8_t x, y;
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     /**
      * 5xy0 - SE Vx, Vy
@@ -123,13 +127,12 @@ int chip8_decode_handler_msb_5(chip8_t *chip8, ushort_t command, uchar_t opcode)
      * The interpreter compares register Vx to register Vy,
      * and if they are equal, increments the program counter by 2.
      */
-    uchar_t x, y;
 
     y = CHIP8_NIBBLE(command, 2);
     x = CHIP8_NIBBLE(command, 3);
 
-    CHIP8_ASSERT_VALID_REGISTER(chip8, x)
-    CHIP8_ASSERT_VALID_REGISTER(chip8, y)
+    CHIP8_ASSERT_VALID_REGISTER(chip8, x, CHIP8_INVALID_REGISTER_ERR);
+    CHIP8_ASSERT_VALID_REGISTER(chip8, y, CHIP8_INVALID_REGISTER_ERR);
 
     if (CHIP8_Vx(chip8, x) != CHIP8_Vx(chip8, y)) {
         chip8->program_counter += 2;
@@ -138,8 +141,11 @@ int chip8_decode_handler_msb_5(chip8_t *chip8, ushort_t command, uchar_t opcode)
     return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_6(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_6(chip8_t *chip8, uint16_t command)
+{
+    uint8_t x, kk;
+
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     /**
      * 6xkk - LD Vx, byte
@@ -147,20 +153,22 @@ int chip8_decode_handler_msb_6(chip8_t *chip8, ushort_t command, uchar_t opcode)
 
      * The interpreter puts the value kk into register Vx.
      */
-    uchar_t x, kk;
 
     kk = command & CHIP8_LSB_MASK(2);
-    x = CHIP8_NIBBLE(command, 3);
+    x  = CHIP8_NIBBLE(command, 3);
 
-    CHIP8_ASSERT_VALID_REGISTER(chip8, x)
+    CHIP8_ASSERT_VALID_REGISTER(chip8, x, CHIP8_INVALID_REGISTER_ERR);
 
     CHIP8_Vx(chip8, x) = kk;
 
     return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_7(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_7(chip8_t *chip8, uint16_t command)
+{
+    uint8_t x, kk;
+
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     /**
      * 7xkk - ADD Vx, byte
@@ -169,33 +177,32 @@ int chip8_decode_handler_msb_7(chip8_t *chip8, ushort_t command, uchar_t opcode)
      * Adds the value kk to the value of register Vx,
      * then stores the result in Vx.
      */
-    uchar_t x, kk;
 
     kk = command & CHIP8_LSB_MASK(2);
-    x = CHIP8_NIBBLE(command, 3);
+    x  = CHIP8_NIBBLE(command, 3);
 
-    CHIP8_ASSERT_VALID_REGISTER(chip8, x)
+    CHIP8_ASSERT_VALID_REGISTER(chip8, x, CHIP8_INVALID_REGISTER_ERR);
 
     CHIP8_Vx(chip8, x) += kk;
 
     return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_8(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_8(chip8_t *chip8, uint16_t command)
+{
+    uint8_t  x, y, lsb;
+    uint32_t add;
 
-    uchar_t x, y, lsb;
-    unsigned int add;
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
-    x = CHIP8_NIBBLE(command, 3);
-    y = CHIP8_NIBBLE(command, 2);
+    x   = CHIP8_NIBBLE(command, 3);
+    y   = CHIP8_NIBBLE(command, 2);
     lsb = CHIP8_NIBBLE(command, 1);
 
-    CHIP8_ASSERT_VALID_REGISTER(chip8, x)
-    CHIP8_ASSERT_VALID_REGISTER(chip8, y)
+    CHIP8_ASSERT_VALID_REGISTER(chip8, x, CHIP8_INVALID_REGISTER_ERR);
+    CHIP8_ASSERT_VALID_REGISTER(chip8, y, CHIP8_INVALID_REGISTER_ERR);
 
-    switch (lsb)
-    {
+    switch (lsb) {
     /**
      * 8xy0 - LD Vx, Vy
      * Set Vx = Vy.
@@ -261,7 +268,7 @@ int chip8_decode_handler_msb_8(chip8_t *chip8, ushort_t command, uchar_t opcode)
     case 0x4:
         add = CHIP8_Vx(chip8, x) + CHIP8_Vx(chip8, y);
 
-        CHIP8_VF(chip8) = add > 255;
+        CHIP8_VF(chip8)    = add > 255;
         CHIP8_Vx(chip8, x) = add & CHIP8_LOWER_8_BITS_MASK;
         break;
 
@@ -274,7 +281,7 @@ int chip8_decode_handler_msb_8(chip8_t *chip8, ushort_t command, uchar_t opcode)
      * and the results stored in Vx.
      */
     case 0x5:
-        CHIP8_VF(chip8) = CHIP8_Vx(chip8, x) > CHIP8_Vx(chip8, y);
+        CHIP8_VF(chip8)    = CHIP8_Vx(chip8, x) > CHIP8_Vx(chip8, y);
         CHIP8_Vx(chip8, x) = CHIP8_Vx(chip8, x) - CHIP8_Vx(chip8, y);
         break;
 
@@ -287,7 +294,7 @@ int chip8_decode_handler_msb_8(chip8_t *chip8, ushort_t command, uchar_t opcode)
      * Then Vx is divided by 2.
      */
     case 0x6:
-        CHIP8_VF(chip8) = CHIP8_Vx(chip8, x) & 0x01;
+        CHIP8_VF(chip8)    = CHIP8_Vx(chip8, x) & 0x01;
         CHIP8_Vx(chip8, x) = CHIP8_Vx(chip8, x) >> 1;
         break;
 
@@ -300,7 +307,7 @@ int chip8_decode_handler_msb_8(chip8_t *chip8, ushort_t command, uchar_t opcode)
      * and the results stored in Vx.
      */
     case 0x7:
-        CHIP8_VF(chip8) = CHIP8_Vx(chip8, y) > CHIP8_Vx(chip8, x);
+        CHIP8_VF(chip8)    = CHIP8_Vx(chip8, y) > CHIP8_Vx(chip8, x);
         CHIP8_Vx(chip8, x) = CHIP8_Vx(chip8, y) - CHIP8_Vx(chip8, x);
         break;
 
@@ -321,11 +328,14 @@ int chip8_decode_handler_msb_8(chip8_t *chip8, ushort_t command, uchar_t opcode)
         break;
     }
 
-   return CHIP8_OK;
+    return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_9(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_9(chip8_t *chip8, uint16_t command)
+{
+    uint8_t x, y;
+
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     /**
      * 9xy0 - SNE Vx, Vy
@@ -334,13 +344,12 @@ int chip8_decode_handler_msb_9(chip8_t *chip8, ushort_t command, uchar_t opcode)
     * The values of Vx and Vy are compared,
     * and if they are not equal, the program counter is increased by 2.
     */
-    uchar_t x, y;
 
     y = CHIP8_NIBBLE(command, 2);
-    x = CHIP8_NIBBLE(command,3);
+    x = CHIP8_NIBBLE(command, 3);
 
-    CHIP8_ASSERT_VALID_REGISTER(chip8, x)
-    CHIP8_ASSERT_VALID_REGISTER(chip8, y)
+    CHIP8_ASSERT_VALID_REGISTER(chip8, x, CHIP8_INVALID_REGISTER_ERR);
+    CHIP8_ASSERT_VALID_REGISTER(chip8, y, CHIP8_INVALID_REGISTER_ERR);
 
     if (CHIP8_Vx(chip8, x) != CHIP8_Vx(chip8, y)) {
         chip8->program_counter += 2;
@@ -349,8 +358,9 @@ int chip8_decode_handler_msb_9(chip8_t *chip8, ushort_t command, uchar_t opcode)
     return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_A(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_A(chip8_t *chip8, uint16_t command)
+{
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     /**
      * Annn - LD I, addr
@@ -362,8 +372,9 @@ int chip8_decode_handler_msb_A(chip8_t *chip8, ushort_t command, uchar_t opcode)
     return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_B(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_B(chip8_t *chip8, uint16_t command)
+{
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     /**
      * Bnnn - JP V0, addr
@@ -374,9 +385,12 @@ int chip8_decode_handler_msb_B(chip8_t *chip8, ushort_t command, uchar_t opcode)
     chip8->program_counter = CHIP8_V0(chip8) + (command & CHIP8_LSB_MASK(3));
     return CHIP8_OK;
 }
-#include <stdio.h>
-int chip8_decode_handler_msb_C(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+
+static int chip8_decode_handler_msb_C(chip8_t *chip8, uint16_t command)
+{
+    uint8_t x, kk;
+
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     /**
      * Cxkk - RND Vx, byte
@@ -387,44 +401,49 @@ int chip8_decode_handler_msb_C(chip8_t *chip8, ushort_t command, uchar_t opcode)
      * The results are stored in Vx.
      * See instruction 8xy2 for more information on AND.
      */
-    uchar_t x, kk;
 
-    srand(time(NULL));
     kk = command & CHIP8_LSB_MASK(2);
-    x = CHIP8_NIBBLE(command, 3);
+    x  = CHIP8_NIBBLE(command, 3);
 
-    CHIP8_ASSERT_VALID_REGISTER(chip8, x)
+    CHIP8_ASSERT_VALID_REGISTER(chip8, x, CHIP8_INVALID_REGISTER_ERR);
 
     CHIP8_Vx(chip8, x) = (rand() % 256) & kk;
 
     return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_D(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_D(chip8_t *chip8, uint16_t command)
+{
+    uint8_t x, y, n, x_pos, y_pos, pixel;
+
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     /**
      * Dxyn - DRW Vx, Vy, nibble
-     * Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
+     * Display n-byte sprite starting at memory location I at (Vx, Vy), set VF =
+     collision.
 
-     * The interpreter reads n bytes from memory, starting at the address stored in I.
-     * These bytes are then displayed as sprites on screen at coordinates (Vx, Vy).
+     * The interpreter reads n bytes from memory, starting at the address stored
+     in I.
+     * These bytes are then displayed as sprites on screen at coordinates (Vx,
+     Vy).
      * Sprites are XORed onto the existing screen.
      * If this causes any pixels to be erased, VF is set to 1,
      * otherwise it is set to 0.
-     * If the sprite is positioned so part of it is outside the coordinates of the display,
+     * If the sprite is positioned so part of it is outside the coordinates of
+     the display,
      * it wraps around to the opposite side of the screen.
      * See instruction 8xy3 for more information on XOR,
-     * and section 2.4, Display, for more information on the Chip-8 screen and sprites.
+     * and section 2.4, Display, for more information on the Chip-8 screen and
+     sprites.
      */
-    uchar_t x, y, n, x_pos, y_pos, pixel;
 
     x = CHIP8_NIBBLE(command, 3);
     y = CHIP8_NIBBLE(command, 2);
     n = CHIP8_NIBBLE(command, 1);
 
-    CHIP8_ASSERT_VALID_REGISTER(chip8, x);
-    CHIP8_ASSERT_VALID_REGISTER(chip8, y);
+    CHIP8_ASSERT_VALID_REGISTER(chip8, x, CHIP8_INVALID_REGISTER_ERR);
+    CHIP8_ASSERT_VALID_REGISTER(chip8, y, CHIP8_INVALID_REGISTER_ERR);
 
     x_pos = CHIP8_Vx(chip8, x);
     y_pos = CHIP8_Vx(chip8, y);
@@ -452,22 +471,24 @@ int chip8_decode_handler_msb_D(chip8_t *chip8, ushort_t command, uchar_t opcode)
     return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_E(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_E(chip8_t *chip8, uint16_t command)
+{
+    uint8_t x;
 
-    uchar_t x;
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
 
     x = CHIP8_NIBBLE(command, 3);
 
-    CHIP8_ASSERT_VALID_REGISTER(chip8, x)
-    CHIP8_ASSERT_VALID_KEY(chip8, chip8->registers[x])
+    CHIP8_ASSERT_VALID_REGISTER(chip8, x, CHIP8_INVALID_REGISTER_ERR);
+    CHIP8_ASSERT_VALID_KEY(chip8, chip8->registers[x], CHIP8_INVALID_KEY_ERR);
 
     /**
      * Ex9E - SKP Vx
      * Skip next instruction if key with the value of Vx is pressed.
 
      * Checks the keyboard,
-     * and if the key corresponding to the value of Vx is currently in the down position,
+     * and if the key corresponding to the value of Vx is currently in the down
+     position,
      * PC is increased by 2.
      */
     if ((command & CHIP8_LSB_MASK(2)) == 0x009E) {
@@ -490,8 +511,10 @@ int chip8_decode_handler_msb_E(chip8_t *chip8, ushort_t command, uchar_t opcode)
     return CHIP8_OK;
 }
 
-int chip8_decode_handler_msb_F(chip8_t *chip8, ushort_t command, uchar_t opcode)  {
-    CHIP8_ASSERT_PTR(chip8);
+static int chip8_decode_handler_msb_F(chip8_t *chip8, uint16_t command)
+{
+    CHIP8_ASSERT_PTR(chip8, CHIP8_INVALID_PTR_ERR);
+    (void)command;
 
     /**
      * Fx07 - LD Vx, DT
@@ -503,7 +526,8 @@ int chip8_decode_handler_msb_F(chip8_t *chip8, ushort_t command, uchar_t opcode)
      * Fx0A - LD Vx, K
      * Wait for a key press, store the value of the key in Vx.
 
-     * All execution stops until a key is pressed, then the value of that key is stored in Vx.
+     * All execution stops until a key is pressed, then the value of that key is
+     stored in Vx.
 
 
      * Fx15 - LD DT, Vx
@@ -527,26 +551,43 @@ int chip8_decode_handler_msb_F(chip8_t *chip8, ushort_t command, uchar_t opcode)
      * Fx29 - LD F, Vx
      * Set I = location of sprite for digit Vx.
 
-     * The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx. See section 2.4, Display, for more information on the Chip-8 hexadecimal font.
+     * The value of I is set to the location for the hexadecimal sprite
+     corresponding to the value of Vx. See section 2.4, Display, for more
+     information on the Chip-8 hexadecimal font.
 
 
      * Fx33 - LD B, Vx
      * Store BCD representation of Vx in memory locations I, I+1, and I+2.
 
-     * The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
+     * The interpreter takes the decimal value of Vx, and places the hundreds
+     digit in memory at location in I, the tens digit at location I+1, and the
+     ones digit at location I+2.
 
 
      * Fx55 - LD [I], Vx
      * Store registers V0 through Vx in memory starting at location I.
 
-     * The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
+     * The interpreter copies the values of registers V0 through Vx into memory,
+     starting at the address in I.
 
 
      * Fx65 - LD Vx, [I]
      * Read registers V0 through Vx from memory starting at location I.
 
-     * The interpreter reads values from memory starting at location I into registers V0 through Vx.
+     * The interpreter reads values from memory starting at location I into
+     registers V0 through Vx.
      */
 
     return CHIP8_OK;
 }
+
+decode_handler handlers[] = {
+    [0x0] = chip8_decode_handler_msb_0, [0x1] = chip8_decode_handler_msb_1,
+    [0x2] = chip8_decode_handler_msb_2, [0x3] = chip8_decode_handler_msb_3,
+    [0x4] = chip8_decode_handler_msb_4, [0x5] = chip8_decode_handler_msb_5,
+    [0x6] = chip8_decode_handler_msb_6, [0x7] = chip8_decode_handler_msb_7,
+    [0x8] = chip8_decode_handler_msb_8, [0x9] = chip8_decode_handler_msb_9,
+    [0xA] = chip8_decode_handler_msb_A, [0xB] = chip8_decode_handler_msb_B,
+    [0xC] = chip8_decode_handler_msb_C, [0xD] = chip8_decode_handler_msb_D,
+    [0xE] = chip8_decode_handler_msb_E, [0xF] = chip8_decode_handler_msb_F,
+};

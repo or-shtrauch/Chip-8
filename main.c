@@ -2,24 +2,28 @@
 #include <signal.h>
 #include "emulator.h"
 
-static emulator_t emulator = {0};
+static emulator_t emulator = { 0 };
 
-void handle_signal(int signal) {
-    emulator.quit = 1;
+void handle_signal(int signal)
+{
+    (void)signal;
+    emulator_signal_shutdown(&emulator);
 }
 
-int main(int argc, char **argv) {
-    int err;
-    char *rom;
+int main(int argc, char **argv)
+{
+    int   err = 0;
+    char *rom = NULL;
 
     signal(SIGINT, handle_signal);
 
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <path to ROM>\n", argv[0]);
         return 1;
-    } else {
-        rom = argv[1];
     }
+
+    rom = argv[1];
+
 
     if (err != EMULATOR_SUCCESS) {
         err = emulator_init(&emulator, rom);
@@ -30,5 +34,5 @@ int main(int argc, char **argv) {
 
 out:
     emulator_cleanup(&emulator);
-    return 0;
+    return err;
 }
